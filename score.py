@@ -21,7 +21,7 @@ def score_run(run_dir: Path) -> None:
     if not ratings_path.exists():
         print(f"Error: {ratings_path} not found.")
         print(f"Fill in ratings.json in {run_dir} first.")
-        return
+        sys.exit(1)
 
     ratings = json.loads(ratings_path.read_text(encoding="utf-8"))
 
@@ -31,7 +31,7 @@ def score_run(run_dir: Path) -> None:
         if any(v is not None for v in r.get("slide_ratings", {}).values())
     }
     if not rated:
-        print("No ratings filled in yet. Edit ratings.json: change null → true or false per slide.")
+        print("No ratings filled in yet.")
         return
 
     print(f"Run: {run_dir}")
