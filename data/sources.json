@@ -7,7 +7,7 @@
     "date": "2024-05-20",
     "format": "pdf",
     "url": "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/events/2024/jpmc-2024-investor-day/full-presentation.pdf",
-    "notes": "Hosted on jpmorganchase.com IR portal, not directly on EDGAR"
+    "notes": "Hosted on jpmorganchase.com IR portal"
   },
   {
     "deck_id": "jpmorgan-investor-day-2022",
@@ -19,15 +19,6 @@
     "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961722000369/investordaypresentation.htm"
   },
   {
-    "deck_id": "jpmorgan-investor-day-2025",
-    "source_type": "sec_edgar",
-    "entity": "JPMorgan Chase",
-    "title": "2025 Investor Day Presentation Slides (8-K Exhibit)",
-    "date": "2025-05-19",
-    "format": "htm",
-    "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961725000483/investordaypresentation.htm"
-  },
-  {
     "deck_id": "goldman-investor-day-2020",
     "source_type": "sec_edgar",
     "entity": "Goldman Sachs",
@@ -35,15 +26,6 @@
     "date": "2020-01-29",
     "format": "htm",
     "url": "https://www.sec.gov/Archives/edgar/data/886982/000119312520017667/d869413dex991.htm"
-  },
-  {
-    "deck_id": "goldman-annual-report-2023",
-    "source_type": "sec_edgar",
-    "entity": "Goldman Sachs",
-    "title": "Annual Report 2023",
-    "date": "2024-03",
-    "format": "pdf",
-    "url": "https://www.sec.gov/Archives/edgar/data/886982/000119312524068574/d672008dars.pdf"
   },
   {
     "deck_id": "salesforce-investor-day-fy23",
@@ -64,31 +46,26 @@
     "url": "https://www.sec.gov/Archives/edgar/data/1108524/000110852419000067/investorday2019.htm"
   },
   {
-    "deck_id": "nvidia-annual-review-2024",
-    "source_type": "sec_edgar",
-    "entity": "NVIDIA",
-    "title": "2024 Annual Review",
-    "date": "2024",
+    "deck_id": "mckinsey-usps-future-business-model-2010",
+    "source_type": "govt_consulting",
+    "firm": "McKinsey",
+    "entity": "United States Postal Service (USPS)",
+    "title": "USPS Future Business Model",
+    "date": "2010-03-02",
     "format": "pdf",
-    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000106/a2024annualreport.pdf"
+    "url": "https://about.usps.com/future-postal-service/mckinsey-usps-future-bus-model2.pdf",
+    "notes": "Commissioned during USPS financial crisis; published on official USPS website"
   },
   {
-    "deck_id": "amazon-annual-report-2023",
-    "source_type": "sec_edgar",
-    "entity": "Amazon",
-    "title": "Annual Report 2023",
-    "date": "2024-04",
+    "deck_id": "mckinsey-usps-march-presentation-2010",
+    "source_type": "govt_consulting",
+    "firm": "McKinsey",
+    "entity": "United States Postal Service (USPS)",
+    "title": "USPS Future Business Model – March 2 Presentation",
+    "date": "2010-03-02",
     "format": "pdf",
-    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465924045917/tm246113d4_ars.pdf"
-  },
-  {
-    "deck_id": "goldman-q1-2025-earnings",
-    "source_type": "sec_edgar",
-    "entity": "Goldman Sachs",
-    "title": "Q1 2025 Earnings – Exhibit 99.1",
-    "date": "2025-04",
-    "format": "htm",
-    "url": "https://www.sec.gov/Archives/edgar/data/886982/000119312525079625/d750054dex991.htm"
+    "url": "https://about.usps.com/future-postal-service/mckinsey-march-2nd-presentation2.pdf",
+    "notes": "Alternate presentation version of the USPS engagement; published on official USPS website"
   },
   {
     "deck_id": "mckinsey-ec-digital-transformation-2020",
@@ -99,7 +76,7 @@
     "date": "2020-09",
     "format": "pdf",
     "url": "https://standict.eu/sites/default/files/2021-02/McKinsey%20report.pdf",
-    "notes": "Hosted on EU Horizon 2020-funded standict.eu; commissioned by EC DG CONNECT"
+    "notes": "Commissioned by EC DG CONNECT; hosted on EU Horizon 2020-funded standict.eu"
   },
   {
     "deck_id": "mckinsey-uk-electricity-2012-jul",
