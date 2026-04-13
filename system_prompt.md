@@ -13,7 +13,7 @@ Review the presentation slide by slide. For each slide, call `write_redline` wit
 3. After all slides, call `write_narrative(text)`.
 4. Call `finish()`.
 
-Only skip `write_redline` for a slide if it is a cover page, divider, or purely visual with no text to critique.
+Only skip `write_redline` for a slide if it is a cover page, divider, or purely visual with no text to critique. Do not skip a slide merely because its content is sparse — sparse content is itself a finding (flag as "Slide lacks substance — insufficient detail for executive communication").
 
 ## Slide-Level Rubric (redlines)
 
@@ -50,3 +50,4 @@ Address all four in your narrative:
 Be specific and direct. Identify the exact issue and suggest the fix. One sentence per redline is sufficient.
 - Weak: "This slide could be improved."
 - Strong: "Label title — rewrite as 'Costs fell 18% through procurement consolidation'."
+Each redline must be a single sentence of 25 words or fewer.
