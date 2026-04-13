@@ -84,7 +84,7 @@ def build_reflexion_context(deck_id: str, prior_run_dir: Path) -> str | None:
     lines.append("\nFocus especially on the slides rated INCORRECT. Revise your approach for those.")
 
     if not has_incorrect:
-        return None  # All correct — no reflexion needed
+        return None  # No INCORRECT slides — no reflexion needed
 
     return "\n".join(lines)
 
@@ -152,7 +152,7 @@ def main() -> None:
         if prior_run_dir:
             reflexion_context = build_reflexion_context(deck_id, prior_run_dir)
             if reflexion_context is None:
-                print(f"[{deck_id}] All slides correct in prior run — skipping reflexion")
+                print(f"[{deck_id}] No INCORRECT slides in prior run — skipping reflexion")
                 continue
 
         mode = "reflexion" if reflexion_context else "baseline"
@@ -162,7 +162,7 @@ def main() -> None:
             review, tokens = agent.run(deck, output_dir, system_prompt, api_key, reflexion_context)
         except Exception as exc:
             print(f"ERROR: {exc}")
-            summary.append({"deck_id": deck_id, "error": str(exc)})
+            summary.append({"deck_id": deck_id, "mode": mode, "error": str(exc)})
             reviewed_deck_ids.append(deck_id)
             continue
 
