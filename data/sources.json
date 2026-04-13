@@ -1,0 +1,195 @@
+[
+  {
+    "deck_id": "jpmorgan-investor-day-2024",
+    "source_type": "sec_edgar",
+    "entity": "JPMorgan Chase",
+    "title": "2024 Investor Day – Full Presentation",
+    "date": "2024-05-20",
+    "format": "pdf",
+    "url": "https://www.jpmorganchase.com/content/dam/jpmc/jpmorgan-chase-and-co/investor-relations/documents/events/2024/jpmc-2024-investor-day/full-presentation.pdf",
+    "notes": "Hosted on jpmorganchase.com IR portal, not directly on EDGAR"
+  },
+  {
+    "deck_id": "jpmorgan-investor-day-2022",
+    "source_type": "sec_edgar",
+    "entity": "JPMorgan Chase",
+    "title": "2022 Investor Day Presentation Slides (8-K Exhibit)",
+    "date": "2022-05-23",
+    "format": "htm",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961722000369/investordaypresentation.htm"
+  },
+  {
+    "deck_id": "jpmorgan-investor-day-2025",
+    "source_type": "sec_edgar",
+    "entity": "JPMorgan Chase",
+    "title": "2025 Investor Day Presentation Slides (8-K Exhibit)",
+    "date": "2025-05-19",
+    "format": "htm",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961725000483/investordaypresentation.htm"
+  },
+  {
+    "deck_id": "goldman-investor-day-2020",
+    "source_type": "sec_edgar",
+    "entity": "Goldman Sachs",
+    "title": "2020 Investor Day – 8-K Exhibit 99.1",
+    "date": "2020-01-29",
+    "format": "htm",
+    "url": "https://www.sec.gov/Archives/edgar/data/886982/000119312520017667/d869413dex991.htm"
+  },
+  {
+    "deck_id": "goldman-annual-report-2023",
+    "source_type": "sec_edgar",
+    "entity": "Goldman Sachs",
+    "title": "Annual Report 2023",
+    "date": "2024-03",
+    "format": "pdf",
+    "url": "https://www.sec.gov/Archives/edgar/data/886982/000119312524068574/d672008dars.pdf"
+  },
+  {
+    "deck_id": "salesforce-investor-day-fy23",
+    "source_type": "sec_edgar",
+    "entity": "Salesforce",
+    "title": "FY23 Investor Day Presentation (8-K Exhibit)",
+    "date": "2022-09",
+    "format": "htm",
+    "url": "https://www.sec.gov/Archives/edgar/data/1108524/000110852422000047/vfinal_investordayxfy23x.htm"
+  },
+  {
+    "deck_id": "salesforce-investor-day-2019",
+    "source_type": "sec_edgar",
+    "entity": "Salesforce",
+    "title": "Investor Day 2019 Presentation (8-K Exhibit)",
+    "date": "2019-09",
+    "format": "htm",
+    "url": "https://www.sec.gov/Archives/edgar/data/1108524/000110852419000067/investorday2019.htm"
+  },
+  {
+    "deck_id": "nvidia-annual-review-2024",
+    "source_type": "sec_edgar",
+    "entity": "NVIDIA",
+    "title": "2024 Annual Review",
+    "date": "2024",
+    "format": "pdf",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000106/a2024annualreport.pdf"
+  },
+  {
+    "deck_id": "amazon-annual-report-2023",
+    "source_type": "sec_edgar",
+    "entity": "Amazon",
+    "title": "Annual Report 2023",
+    "date": "2024-04",
+    "format": "pdf",
+    "url": "https://www.sec.gov/Archives/edgar/data/1018724/000110465924045917/tm246113d4_ars.pdf"
+  },
+  {
+    "deck_id": "goldman-q1-2025-earnings",
+    "source_type": "sec_edgar",
+    "entity": "Goldman Sachs",
+    "title": "Q1 2025 Earnings – Exhibit 99.1",
+    "date": "2025-04",
+    "format": "htm",
+    "url": "https://www.sec.gov/Archives/edgar/data/886982/000119312525079625/d750054dex991.htm"
+  },
+  {
+    "deck_id": "mckinsey-ec-digital-transformation-2020",
+    "source_type": "govt_consulting",
+    "firm": "McKinsey",
+    "entity": "European Commission (DG CONNECT)",
+    "title": "Shaping the Digital Transformation in Europe",
+    "date": "2020-09",
+    "format": "pdf",
+    "url": "https://standict.eu/sites/default/files/2021-02/McKinsey%20report.pdf",
+    "notes": "Hosted on EU Horizon 2020-funded standict.eu; commissioned by EC DG CONNECT"
+  },
+  {
+    "deck_id": "mckinsey-uk-electricity-2012-jul",
+    "source_type": "govt_consulting",
+    "firm": "McKinsey",
+    "entity": "UK Government (DECC)",
+    "title": "Capturing the Full Electricity Efficiency Potential of the UK (July 2012)",
+    "date": "2012-07",
+    "format": "pdf",
+    "url": "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/48456/5776-capturing-the-full-electricity-efficiency-potentia.pdf"
+  },
+  {
+    "deck_id": "mckinsey-uk-electricity-2012-nov",
+    "source_type": "govt_consulting",
+    "firm": "McKinsey",
+    "entity": "UK Government (DECC)",
+    "title": "Capturing the Full Electricity Efficiency Potential of the UK (November 2012)",
+    "date": "2012-11",
+    "format": "pdf",
+    "url": "https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/65626/7035-capturing-full-elec-eff-potential-edr.pdf"
+  },
+  {
+    "deck_id": "mckinsey-uk-home-office-2005",
+    "source_type": "govt_consulting",
+    "firm": "McKinsey",
+    "entity": "UK Home Office",
+    "title": "Work Conducted for the Home Office by McKinsey & Company (FOI release)",
+    "date": "2005",
+    "format": "pdf",
+    "url": "https://assets.publishing.service.gov.uk/media/5a7ae9e340f0b66a2fc03b2c/2288-Mckinsey.pdf"
+  },
+  {
+    "deck_id": "mckinsey-edb-ai-southeast-asia-2024",
+    "source_type": "govt_consulting",
+    "firm": "McKinsey",
+    "entity": "Singapore EDB (Economic Development Board)",
+    "title": "AI in Southeast Asia: An Era of Opportunity",
+    "date": "2024",
+    "format": "pdf",
+    "url": "https://www.edb.gov.sg/content/dam/edb-en/business-insights/market-and-industry-reports/ai-in-southeast-asia-an-era-of-opportunity/State_of_Ai_SEA_Digital.pdf"
+  },
+  {
+    "deck_id": "mckinsey-nhs-productivity-2009",
+    "source_type": "govt_consulting",
+    "firm": "McKinsey",
+    "entity": "NHS / UK Health",
+    "title": "Achieving World Class Productivity in the NHS",
+    "date": "2009",
+    "format": "pdf",
+    "url": "https://www.healthemergency.org.uk/pdf/McKinsey%20report%20on%20efficiency%20in%20NHS.pdf"
+  },
+  {
+    "deck_id": "bcg-nhs-confederation-2024-sep",
+    "source_type": "govt_consulting",
+    "firm": "BCG",
+    "entity": "NHS Confederation (UK)",
+    "title": "Improving Our Nation's Health: A Whole-of-Government Approach",
+    "date": "2024-09",
+    "format": "pdf",
+    "url": "https://web-assets.bcg.com/0b/07/0282006042a8a97b15ddb9893567/improving-our-nations-health-a-whole-of-government-approach-to-tackling-the-causes-of-long-term-sickness.pdf"
+  },
+  {
+    "deck_id": "bcg-ec-smart-cities-mobility-2018",
+    "source_type": "govt_consulting",
+    "firm": "BCG",
+    "entity": "European Commission Smart Cities Marketplace",
+    "title": "Where to Profit as Tech Transforms Mobility",
+    "date": "2018-08",
+    "format": "pdf",
+    "url": "https://smart-cities-marketplace.ec.europa.eu/sites/default/files/BCG-Where-to-Profit-as-Tech-Transforms-Mobility-Aug-2018_tcm81-200577.pdf"
+  },
+  {
+    "deck_id": "bcg-australia-senate-inquiry-2024",
+    "source_type": "govt_consulting",
+    "firm": "BCG",
+    "entity": "Australian Parliament Senate Inquiry",
+    "title": "Submission – Inquiry into Management and Assurance of Integrity by Consulting Services",
+    "date": "2024-02",
+    "format": "pdf",
+    "url": "https://www.aph.gov.au/DocumentStore.ashx?id=436e166c-3f81-42d1-92be-9dd419cee022",
+    "notes": "Australian Parliament document store links can be temperamental"
+  },
+  {
+    "deck_id": "bcg-nhs-confederation-2024-jun",
+    "source_type": "govt_consulting",
+    "firm": "BCG",
+    "entity": "NHS Confederation (UK)",
+    "title": "Improving Our Nation's Health (June 2024 interim report)",
+    "date": "2024-06",
+    "format": "pdf",
+    "url": "https://web-assets.bcg.com/e1/b6/8b925edb4445bce8c3f365d3cf6f/improving-our-nations-health-a-whole-of-government-approach-to-tackling-the-causes-of-long-term-sickness.PDF"
+  }
+]
