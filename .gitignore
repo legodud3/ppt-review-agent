@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 .DS_Store
+data/decks/
 data/raw/
+runs/
 *.pptx
 *.pdf

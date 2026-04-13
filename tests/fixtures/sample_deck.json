@@ -1,0 +1,25 @@
+{
+  "deck_id": "test-deck",
+  "source_type": "sec_edgar",
+  "entity": "Test Corp",
+  "title": "Test Deck",
+  "url": "https://example.com/test.pdf",
+  "parsed_date": "2026-04-13",
+  "slides": [
+    {
+      "page": 1,
+      "title": "Revenue performance",
+      "body": "Revenue grew this year\nKey drivers were APAC and EMEA regions"
+    },
+    {
+      "page": 2,
+      "title": "Market position",
+      "body": "We are market leaders\nSignificant growth ahead\nCompetition remains intense"
+    },
+    {
+      "page": 3,
+      "title": "Next steps",
+      "body": "Execute plan\nMonitor KPIs\nReport back quarterly"
+    }
+  ]
+}
