@@ -1,4 +1,4 @@
-# PPT Review Agent — Design Spec
+# PPT Review Agent v0.1 — Design Spec
 
 ## Goal
 
@@ -170,12 +170,34 @@ API key stays in `.env`, never committed.
 
 ---
 
-## What is not in v1
+## Reflexion loop
 
-- Vision / image rendering of slides
-- Automatic download from EDGAR (manual URL curation for now)
-- Reflexion loop (agent improves from feedback)
+Reflexion is included in v0.1 but activates only after the first baseline run is complete and the rubric is stable. Activating it before that is counterproductive — if the rubric changes between runs, the agent is reflecting on feedback generated under different criteria and improvement is unattributable.
+
+**How it works:**
+
+After you rate a run, `eval.py --reflexion` re-runs the agent on each deck it got wrong, passing prior feedback + your slide ratings as additional context:
+
+```
+System: <rubric>
+User: <deck slides>
+User: [Reflexion context] On your previous review of this deck you wrote:
+      Slide 3: "Title is a label not an action title"
+      Human rating: INCORRECT — the title "Costs reduced 18% through procurement" IS an action title.
+      Slide 7: "No so-what stated"
+      Human rating: CORRECT
+      Use this feedback to improve your review.
+```
+
+The agent then produces a revised review. You rate again. Delta in accuracy is the Reflexion signal.
+
+**Sequencing rule:** run baseline first (no reflexion context), rate it, lock the rubric, then run Reflexion. This keeps the two signals clean and comparable.
+
+---
+
+## What is not in v0.1
+
+- Vision / image rendering of slides (v0.2)
+- Automatic download from EDGAR — manual URL curation for now
 - Multi-agent (generator + verifier)
 - Fine-tuning on rated traces
-
-These are natural v2 directions once the core eval loop is validated.
