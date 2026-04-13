@@ -14,9 +14,11 @@ from pathlib import Path
 import pdfplumber
 import requests
 
-SOURCES = Path("data/sources.json")
-DECKS_DIR = Path("data/decks")
-RAW_DIR = Path("data/raw")
+_ROOT = Path(__file__).parent.parent  # project root (data/download.py → data/ → root)
+
+SOURCES = _ROOT / "data" / "sources.json"
+DECKS_DIR = _ROOT / "data" / "decks"
+RAW_DIR = _ROOT / "data" / "raw"
 
 
 def fetch_pdf(url: str, dest: Path) -> bool:
@@ -25,6 +27,10 @@ def fetch_pdf(url: str, dest: Path) -> bool:
         resp = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"})
         resp.raise_for_status()
         dest.write_bytes(resp.content)
+        if dest.stat().st_size == 0:
+            print("  Fetch error: server returned empty body")
+            dest.unlink(missing_ok=True)
+            return False
         return True
     except Exception as e:
         print(f"  Fetch error: {e}")
