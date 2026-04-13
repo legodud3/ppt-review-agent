@@ -34,7 +34,13 @@ class Tools:
         return {"page": slide["page"], "title": slide["title"], "body": slide["body"]}
 
     def write_redline(self, page_num: int, feedback: str) -> str:
-        """Save a redline comment for a slide."""
+        """Save a redline comment for a slide. Returns error string for out-of-range pages."""
+        slides = self.deck["slides"]
+        if page_num < 1 or page_num > len(slides):
+            return f"Error: Page {page_num} out of range (1–{len(slides)}). Redline not saved."
+        if page_num in self.redlines:
+            self.redlines[page_num] = feedback
+            return f"Redline for slide {page_num} updated (previous comment replaced)."
         self.redlines[page_num] = feedback
         return f"Redline saved for slide {page_num}."
 
@@ -45,7 +51,10 @@ class Tools:
 
     def finish(self) -> str:
         """Flush redlines and narrative to disk and mark review complete."""
+        if self._finished:
+            return "Review already complete."
         self._finished = True
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         redlines_path = self.output_dir / "redlines.json"
         narrative_path = self.output_dir / "narrative.txt"
         redlines_path.write_text(

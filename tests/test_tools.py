@@ -6,7 +6,7 @@ from tools import Tools
 
 @pytest.fixture
 def sample_deck():
-    fixture = Path("tests/fixtures/sample_deck.json")
+    fixture = Path(__file__).parent / "fixtures" / "sample_deck.json"
     return json.loads(fixture.read_text())
 
 
@@ -49,9 +49,28 @@ def test_write_redline(tools):
     assert tools.redlines[1] == "Label title — rewrite to state conclusion"
 
 
+def test_write_redline_out_of_range(tools):
+    msg = tools.write_redline(0, "should not save")
+    assert "Error" in msg
+    assert 0 not in tools.redlines
+
+    msg = tools.write_redline(99, "should not save")
+    assert "Error" in msg
+    assert 99 not in tools.redlines
+
+
 def test_write_narrative(tools):
     msg = tools.write_narrative("Deck lacks narrative arc.")
+    assert msg == "Narrative saved."
     assert tools.narrative == "Deck lacks narrative arc."
+
+
+def test_finish_idempotent(tools):
+    tools.write_redline(1, "Label title")
+    tools.write_narrative("Poor arc.")
+    tools.finish()
+    msg = tools.finish()
+    assert msg == "Review already complete."
 
 
 def test_finish_writes_files(tools, tmp_path):
