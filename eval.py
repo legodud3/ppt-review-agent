@@ -36,10 +36,10 @@ def build_ratings_template(deck_ids: list[str], run_dir: Path) -> None:
             slide_ratings = {page: None for page in redlines}
         else:
             slide_ratings = {}
-        template[deck_id] = {
-            "slide_ratings": slide_ratings,
-            "notes": "",
-        }
+        entry: dict = {"slide_ratings": slide_ratings, "notes": ""}
+        if not slide_ratings:
+            entry["warning"] = "redlines.json not found — agent may not have called finish()"
+        template[deck_id] = entry
     ratings_path = run_dir / "ratings.json"
     ratings_path.write_text(json.dumps(template, indent=2), encoding="utf-8")
     print(f"\nRatings template written to {ratings_path}")
@@ -90,12 +90,17 @@ def main() -> None:
         deck = json.loads(deck_file.read_text(encoding="utf-8"))
         deck_id = deck["deck_id"]
         output_dir = run_dir / deck_id
-        output_dir.mkdir()
-
         n_slides = len(deck["slides"])
         print(f"[{deck_id}] Reviewing ({n_slides} slides)...", end=" ", flush=True)
 
-        review, tokens = agent.run(deck, output_dir, system_prompt, api_key)
+        try:
+            review, tokens = agent.run(deck, output_dir, system_prompt, api_key)
+        except Exception as exc:
+            print(f"ERROR: {exc}")
+            summary.append({"deck_id": deck_id, "error": str(exc)})
+            reviewed_deck_ids.append(deck_id)
+            continue
+
         total_tokens = sum(tokens.values())
         n_redlines = len(review["redlines"])
 
