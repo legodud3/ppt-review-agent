@@ -1,6 +1,6 @@
 """ReAct loop for the PPT review agent.
 
-run(deck, output_dir, system_prompt, api_key) → (review_dict, token_stats)
+run(deck, output_dir, system_prompt, api_key, reflexion_context=None) → (review_dict, token_stats)
 
 review_dict = {"redlines": {page_num: feedback}, "narrative": str}
 token_stats  = {"input": int, "output": int, "thinking": int}
@@ -140,7 +140,8 @@ def run(
             break
 
         candidate = response.candidates[0]
-        fn_calls = [p for p in candidate.content.parts if p.function_call]
+        parts = candidate.content.parts or []
+        fn_calls = [p for p in parts if p.function_call]
 
         if fn_calls:
             contents.append(candidate.content)
@@ -176,6 +177,9 @@ def run(
             contents.append(types.Content(role="user", parts=[types.Part.from_text(
                 text="Continue the review. Use the available tools to read slides and write feedback."
             )]))
+
+    if not tools.is_finished:
+        print(f"  Warning: agent hit MAX_ITERATIONS ({MAX_ITERATIONS}) without calling finish()")
 
     review = {"redlines": tools.redlines, "narrative": tools.narrative}
     return review, tokens
