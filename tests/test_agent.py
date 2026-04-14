@@ -45,7 +45,7 @@ def test_dispatch_read_deck_metadata(sample_deck, output_dir):
     from tools import Tools
     t = Tools(sample_deck, output_dir)
     result = _dispatch(t, "read_deck_metadata", {})
-    assert len(result) > 0
+    assert "total_pages" in result
 
 
 def test_dispatch_unknown_tool(sample_deck, output_dir):
@@ -148,3 +148,23 @@ def test_run_with_reflexion_context(sample_deck, output_dir):
 
     first_user_msg = next(m for m in captured[0]["messages"] if m["role"] == "user")
     assert "Prior feedback" in first_user_msg["content"]
+
+
+def test_run_raises_on_api_error_body(sample_deck, output_dir):
+    """OpenRouter returns HTTP 200 with an error body on rate limits etc."""
+    from agent import run
+    import pytest
+
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {"error": {"message": "Rate limit exceeded", "code": 429}}
+    mock_resp.raise_for_status.return_value = None
+
+    with patch("agent.requests.post", return_value=mock_resp):
+        with pytest.raises(RuntimeError, match="OpenRouter error"):
+            run(
+                deck=sample_deck,
+                output_dir=output_dir,
+                system_prompt="Review.",
+                api_key="test-key",
+                model="test/model",
+            )

@@ -6,6 +6,7 @@ review_dict = {"redlines": {page_num: feedback}, "narrative": str}
 token_stats  = {"input": int, "output": int, "thinking": int}
 """
 import json
+import sys
 import tomllib
 from pathlib import Path
 
@@ -143,18 +144,31 @@ def run(
         resp.raise_for_status()
         data = resp.json()
 
+        if "error" in data:
+            raise RuntimeError(f"OpenRouter error: {data['error'].get('message', data['error'])}")
+        choices = data.get("choices")
+        if not choices:
+            raise RuntimeError(f"Unexpected API response (no choices): {data}")
+        message = choices[0]["message"]
+
         usage = data.get("usage", {})
         tokens["input"] += usage.get("prompt_tokens", 0) or 0
         tokens["output"] += usage.get("completion_tokens", 0) or 0
         tokens["thinking"] += usage.get("native_tokens_reasoning", 0) or 0
 
-        message = data["choices"][0]["message"]
-
         if message.get("tool_calls"):
             messages.append(message)
             for tc in message["tool_calls"]:
                 name = tc["function"]["name"]
-                args = json.loads(tc["function"]["arguments"])
+                try:
+                    args = json.loads(tc["function"]["arguments"])
+                except json.JSONDecodeError:
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": "Error: could not parse tool arguments as JSON. Please retry with valid JSON.",
+                    })
+                    continue
                 result = _dispatch(tools_obj, name, args)
                 messages.append({
                     "role": "tool",
@@ -171,7 +185,7 @@ def run(
             )})
 
     if not tools_obj.is_finished:
-        print(f"  Warning: agent hit MAX_ITERATIONS ({MAX_ITERATIONS}) without calling finish()")
+        print(f"  Warning: agent hit MAX_ITERATIONS ({MAX_ITERATIONS}) without calling finish()", file=sys.stderr)
 
     review = {"redlines": tools_obj.redlines, "narrative": tools_obj.narrative}
     return review, tokens
