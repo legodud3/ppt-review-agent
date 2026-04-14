@@ -447,7 +447,8 @@ function escHtml(s) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function selectRedline(slide) {
@@ -527,9 +528,19 @@ async function loadPdf(deckId) {
     S.currentPage = 1;
     renderPage(1);
   } catch(e) {
-    document.getElementById('pdf-container').innerHTML =
-      '<div style="color:#ccc;font-size:12px;text-align:center;padding:20px;">PDF not available.<br><small>Run data/download.py to fetch PDFs.</small></div>';
+    const canvas = document.getElementById('pdf-canvas');
+    canvas.style.display = 'none';
+    const container = document.getElementById('pdf-container');
+    // Remove any previous error message
+    const prev = container.querySelector('.pdf-error-msg');
+    if (prev) prev.remove();
+    const msg = document.createElement('div');
+    msg.className = 'pdf-error-msg';
+    msg.style.cssText = 'color:#ccc;font-size:12px;text-align:center;padding:20px;';
+    msg.innerHTML = 'PDF not available.<br><small>Run data/download.py to fetch PDFs.</small>';
+    container.appendChild(msg);
     document.getElementById('pdf-page-info').textContent = '—';
+    S.pdfDoc = null;
   }
 }
 
@@ -538,9 +549,13 @@ async function renderPage(num) {
   S.currentPage = Math.max(1, Math.min(num, S.totalPages));
   const page = await S.pdfDoc.getPage(S.currentPage);
   const container = document.getElementById('pdf-container');
+  // Restore canvas if it was hidden by a prior error
+  const canvas = document.getElementById('pdf-canvas');
+  canvas.style.display = 'block';
+  const errorMsg = container.querySelector('.pdf-error-msg');
+  if (errorMsg) errorMsg.remove();
   const scale = Math.min(container.clientWidth / page.getViewport({scale: 1}).width, 1.5);
   const viewport = page.getViewport({scale: scale});
-  const canvas = document.getElementById('pdf-canvas');
   canvas.width = viewport.width;
   canvas.height = viewport.height;
   await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
@@ -628,6 +643,10 @@ async function startEval() {
         logEl.scrollTop = logEl.scrollHeight;
       }
     }
+    // Stream ended without __DONE__ sentinel (server crash or early close)
+    logEl.textContent += '\n(stream ended)\n';
+    btn.disabled = false;
+    btn.textContent = '▶ Run';
   } catch(e) {
     logEl.textContent += '\nNetwork error: ' + e.message + '\n';
     btn.disabled = false;
