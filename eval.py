@@ -18,12 +18,14 @@ import agent
 
 load_dotenv()
 
-with open("config.toml", "rb") as _f:
+_ROOT = Path(__file__).parent
+
+with open(_ROOT / "config.toml", "rb") as _f:
     _config = tomllib.load(_f)
 
-DATASET_DIR = Path(_config["eval"]["dataset_dir"])
-RUNS_DIR = Path(_config["eval"]["runs_dir"])
-SYSTEM_PROMPT_FILE = Path(_config["eval"]["system_prompt_file"])
+DATASET_DIR = _ROOT / _config["eval"]["dataset_dir"]
+RUNS_DIR = _ROOT / _config["eval"]["runs_dir"]
+SYSTEM_PROMPT_FILE = _ROOT / _config["eval"]["system_prompt_file"]
 
 
 def build_ratings_template(deck_ids: list[str], run_dir: Path) -> None:
@@ -98,11 +100,16 @@ def main() -> None:
         metavar="PRIOR_RUN_DIR",
         help="Re-run with reflexion context from a prior rated run (e.g. runs/20260413_120000)",
     )
+    parser.add_argument(
+        "--model",
+        default=agent.DEFAULT_MODEL,
+        help=f"OpenRouter model ID (default: {agent.DEFAULT_MODEL})",
+    )
     args = parser.parse_args()
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key or api_key == "your_key_here":
-        print("Error: set GEMINI_API_KEY in .env", file=sys.stderr)
+        print("Error: set OPENROUTER_API_KEY in .env", file=sys.stderr)
         sys.exit(1)
 
     if not SYSTEM_PROMPT_FILE.exists():
@@ -134,7 +141,7 @@ def main() -> None:
 
     print(f"Run: {run_dir}")
     print(f"Decks: {len(deck_files)}")
-    print(f"Model: {agent.MODEL} | thinking: {agent._THINKING_LEVEL} | max_iter: {agent.MAX_ITERATIONS}")
+    print(f"Model: {args.model} | max_iter: {agent.MAX_ITERATIONS}")
     if prior_run_dir:
         print(f"Reflexion: {prior_run_dir}")
     print()
@@ -159,7 +166,9 @@ def main() -> None:
         print(f"[{deck_id}] Reviewing ({n_slides} slides, {mode})...", end=" ", flush=True)
 
         try:
-            review, tokens = agent.run(deck, output_dir, system_prompt, api_key, reflexion_context)
+            review, tokens = agent.run(
+                deck, output_dir, system_prompt, api_key, args.model, reflexion_context
+            )
         except Exception as exc:
             print(f"ERROR: {exc}")
             summary.append({"deck_id": deck_id, "mode": mode, "error": str(exc)})
