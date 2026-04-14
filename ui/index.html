@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PPT Review Agent</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: monospace; }
+body { background: #fff; color: #111; font-size: 13px; height: 100vh; display: flex; flex-direction: column; }
+
+/* ── Nav ── */
+nav {
+  display: flex; align-items: center; gap: 0; background: #222; padding: 0 16px;
+  border-bottom: 2px solid #555; flex-shrink: 0;
+}
+nav a {
+  color: #ccc; text-decoration: none; padding: 10px 16px; font-size: 12px;
+  text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;
+  border-right: 1px solid #444;
+}
+nav a.active { color: #fff; background: #444; }
+nav a:hover { background: #333; }
+.nav-title { color: #888; font-size: 11px; flex: 1; text-align: right; padding-right: 4px; }
+
+/* ── Tabs ── */
+.tab { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.tab.active { display: flex; }
+
+/* ── Runs tab ── */
+#tab-runs { padding: 20px; overflow-y: auto; }
+.runs-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.runs-header h2 { font-size: 14px; }
+.btn { font-family: monospace; font-size: 11px; padding: 5px 14px; border: 1.5px solid #555; background: #eee; cursor: pointer; }
+.btn:hover { background: #ddd; }
+.btn-primary { background: #333; color: #fff; border-color: #333; }
+.btn-primary:hover { background: #444; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; padding: 6px 10px; border-bottom: 2px solid #ccc; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #555; }
+td { padding: 6px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+tr:hover td { background: #f5f5f5; }
+.badge { font-size: 9px; padding: 2px 6px; border: 1px solid #bbb; color: #555; }
+.badge-reflexion { border-color: #99a; color: #669; }
+
+/* ── Modal ── */
+#modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 100; align-items: center; justify-content: center;
+}
+#modal-overlay.open { display: flex; }
+#modal {
+  background: #fff; border: 2px solid #555; padding: 24px; width: 560px;
+  max-height: 80vh; overflow-y: auto; position: relative;
+}
+#modal h3 { font-size: 13px; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.06em; }
+.form-row { margin-bottom: 12px; }
+.form-row label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: #555; margin-bottom: 4px; }
+.form-row select, .form-row input[type=text] {
+  width: 100%; font-family: monospace; font-size: 12px;
+  padding: 5px 8px; border: 1px solid #bbb; background: #fafafa;
+}
+.modal-close { position: absolute; top: 10px; right: 14px; font-size: 16px; cursor: pointer; color: #888; border: none; background: none; }
+#eval-log {
+  display: none; margin-top: 14px; background: #111; color: #cfc;
+  padding: 10px; font-size: 11px; height: 200px; overflow-y: auto;
+  border: 1px solid #444; white-space: pre-wrap; word-break: break-all;
+}
+.reflexion-row { display: none; }
+.reflexion-row.visible { display: block; }
+
+/* ── Review tab layout ── */
+#tab-review { overflow: hidden; }
+#topbar {
+  display: flex; align-items: center; gap: 10px; padding: 0 12px;
+  background: #eee; border-bottom: 1.5px solid #bbb; height: 44px; flex-shrink: 0;
+}
+#topbar label { font-size: 10px; text-transform: uppercase; color: #666; letter-spacing: 0.05em; }
+#topbar select { font-family: monospace; font-size: 11px; padding: 2px 6px; border: 1px solid #aaa; background: #fff; cursor: pointer; }
+.topbar-divider { width: 1px; height: 22px; background: #bbb; flex-shrink: 0; }
+#topbar-stat { font-size: 11px; color: #555; flex: 1; text-align: right; }
+#main-layout {
+  display: grid; grid-template-columns: 50% 1fr 20%;
+  flex: 1; overflow: hidden; gap: 0;
+}
+.panel { border-right: 1.5px solid #ddd; display: flex; flex-direction: column; overflow: hidden; }
+.panel:last-child { border-right: none; }
+.panel-header { font-size: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.08em; color: #555; padding: 6px 10px; border-bottom: 1px solid #e0e0e0; flex-shrink: 0; }
+
+/* PDF panel */
+#pdf-container { flex: 1; overflow-y: auto; display: flex; align-items: center; justify-content: center; background: #888; padding: 8px; }
+#pdf-canvas { display: block; max-width: 100%; }
+#pdf-nav { display: flex; gap: 6px; align-items: center; padding: 6px 10px; border-top: 1px solid #ddd; flex-shrink: 0; font-size: 11px; background: #f5f5f5; }
+#pdf-nav button { font-family: monospace; font-size: 11px; padding: 2px 8px; border: 1px solid #aaa; background: #eee; cursor: pointer; }
+#pdf-page-info { flex: 1; text-align: center; color: #555; }
+
+/* Redlines panel */
+#redlines-list { flex: 1; overflow-y: auto; }
+.redline-row {
+  display: flex; align-items: flex-start; gap: 7px; padding: 7px 8px;
+  border-bottom: 1px solid #eee; cursor: pointer; font-size: 11px;
+}
+.redline-row:hover { background: #f8f8f8; }
+.redline-row.selected { background: #efefef; border-left: 3px solid #555; padding-left: 5px; }
+.redline-row.unrated { opacity: 0.75; }
+.slide-num { font-weight: bold; min-width: 28px; color: #333; font-size: 11px; padding-top: 2px; flex-shrink: 0; }
+.rating-btns { display: flex; gap: 3px; flex-shrink: 0; padding-top: 1px; }
+.btn-t, .btn-f {
+  font-size: 10px; padding: 2px 7px; border: 1px solid #aaa; background: #eee;
+  cursor: pointer; font-family: monospace; font-weight: bold;
+}
+.btn-t.active { background: #c8f0c8; border-color: #5a5; }
+.btn-f.active { background: #f0c8c8; border-color: #a55; }
+.redline-text { flex: 1; line-height: 1.5; color: #222; padding-top: 2px; }
+.redline-badge { font-size: 9px; padding: 2px 5px; border: 1px solid #ccc; color: #666; white-space: nowrap; flex-shrink: 0; align-self: flex-start; margin-top: 3px; }
+
+/* Notes panel */
+#notes-area { flex: 1; width: 100%; font-family: monospace; font-size: 11px; border: none; border-bottom: 1px solid #ddd; padding: 8px; resize: none; background: #fafafa; line-height: 1.5; outline: none; }
+#score-box { padding: 14px 10px; text-align: center; border-top: 1px solid #e0e0e0; background: #f5f5f5; flex-shrink: 0; }
+#score-big { font-size: 26px; font-weight: bold; }
+#score-sub { font-size: 10px; color: #666; margin-top: 4px; }
+
+/* Bottom bar */
+#bottombar { display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-top: 1.5px solid #bbb; background: #eee; font-size: 11px; color: #555; height: 36px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a id="nav-runs" class="active" onclick="showTab('runs')">Runs</a>
+  <a id="nav-review" onclick="showTab('review')">Review</a>
+  <span class="nav-title">PPT Review Agent</span>
+</nav>
+
+<!-- ── Tab: Runs ───────────────────────────────────────────────────────────── -->
+<div id="tab-runs" class="tab active">
+  <div class="runs-header">
+    <h2>Runs</h2>
+    <button class="btn btn-primary" onclick="openModal()">+ New Run</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Run ID</th>
+        <th>Decks</th>
+        <th>Mode</th>
+        <th>Score</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="runs-tbody">
+      <tr><td colspan="5" style="color:#999;padding:20px 10px;">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Tab: Review ─────────────────────────────────────────────────────────── -->
+<div id="tab-review" class="tab">
+  <div id="topbar">
+    <label>Run</label>
+    <select id="run-select" onchange="onRunChange()">
+      <option value="">— select —</option>
+    </select>
+    <div class="topbar-divider"></div>
+    <label>Deck</label>
+    <select id="deck-select" onchange="onDeckChange()">
+      <option value="">— select —</option>
+    </select>
+    <div class="topbar-divider"></div>
+    <span id="topbar-stat">— / — rated</span>
+    <button class="btn" onclick="openModal()">▶ Run eval.py</button>
+  </div>
+
+  <div id="main-layout">
+    <!-- Left 50%: PDF -->
+    <div class="panel" id="pdf-panel-wrap">
+      <div class="panel-header">PDF Viewer</div>
+      <div id="pdf-container">
+        <canvas id="pdf-canvas"></canvas>
+      </div>
+      <div id="pdf-nav">
+        <button onclick="prevPage()">◀</button>
+        <span id="pdf-page-info">—</span>
+        <button onclick="nextPage()">▶</button>
+      </div>
+    </div>
+
+    <!-- Middle 30%: Redlines + Ratings -->
+    <div class="panel">
+      <div class="panel-header">Redlines + Ratings</div>
+      <div id="redlines-list">
+        <div style="padding:16px;color:#999;font-size:11px;">Select a run and deck to load redlines.</div>
+      </div>
+    </div>
+
+    <!-- Right 20%: Notes + Score -->
+    <div class="panel">
+      <div class="panel-header">Deck Notes</div>
+      <textarea id="notes-area" placeholder="Type notes here..." onblur="saveNotes()"></textarea>
+      <div id="score-box">
+        <div id="score-big">—</div>
+        <div id="score-sub">no ratings yet</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bottombar">
+    <span>auto-saves on T/F click · notes saved on blur</span>
+    <button class="btn" onclick="refreshScore()">Save &amp; Score</button>
+  </div>
+</div>
+
+<!-- ── New Run Modal ───────────────────────────────────────────────────────── -->
+<div id="modal-overlay">
+  <div id="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3>New Run</h3>
+
+    <div class="form-row">
+      <label>Model</label>
+      <select id="model-select">
+        <option value="">Loading models...</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label>Deck (leave blank for all)</label>
+      <select id="modal-deck-select">
+        <option value="">All decks</option>
+      </select>
+    </div>
+
+    <div class="form-row">
+      <label style="cursor:pointer;display:flex;align-items:center;gap:6px;">
+        <input type="checkbox" id="reflexion-toggle" onchange="toggleReflexion()">
+        Use reflexion from prior run
+      </label>
+    </div>
+
+    <div class="form-row reflexion-row" id="reflexion-row">
+      <label>Prior run</label>
+      <select id="reflexion-run-select">
+        <option value="">— select prior run —</option>
+      </select>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-primary" id="run-btn" onclick="startEval()">▶ Run</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+
+    <pre id="eval-log"></pre>
+  </div>
+</div>
+
+<script>
+// ── PDF.js setup ──────────────────────────────────────────────────────────────
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const S = {
+  runs: [],
+  decks: [],
+  models: [],
+  currentRunId: null,
+  currentDeckId: null,
+  ratings: {},
+  redlines: {},
+  pdfDoc: null,
+  currentPage: 1,
+  totalPages: 1,
+  selectedSlide: null,
+};
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
+
+// ── Runs tab ──────────────────────────────────────────────────────────────────
+async function loadRuns() {
+  const resp = await fetch('/api/runs');
+  S.runs = await resp.json();
+  renderRunsTable();
+  populateRunSelects();
+}
+
+function renderRunsTable() {
+  const tbody = document.getElementById('runs-tbody');
+  if (!S.runs.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="color:#999;padding:20px 10px;">No runs yet. Click "+ New Run" to start.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = S.runs.map(function(r) {
+    const sc = r.score;
+    const pct = sc.rated ? Math.round(sc.correct / sc.rated * 100) + '%' : '—';
+    const scoreStr = sc.rated ? sc.correct + '/' + sc.rated + ' (' + pct + ')' : '—';
+    const modeLabel = r.mode === 'reflexion'
+      ? '<span class="badge badge-reflexion">reflexion</span>'
+      : '<span class="badge">baseline</span>';
+    return '<tr>'
+      + '<td style="font-weight:bold;">' + escHtml(r.run_id) + '</td>'
+      + '<td>' + r.deck_ids.length + ' deck' + (r.deck_ids.length !== 1 ? 's' : '') + '</td>'
+      + '<td>' + modeLabel + '</td>'
+      + '<td>' + scoreStr + '</td>'
+      + '<td><button class="btn" onclick="openReview(\'' + escHtml(r.run_id) + '\')">Review →</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function openReview(runId) {
+  showTab('review');
+  var sel = document.getElementById('run-select');
+  sel.value = runId;
+  onRunChange();
+}
+
+// ── Decks + Models ────────────────────────────────────────────────────────────
+async function loadDecks() {
+  const resp = await fetch('/api/decks');
+  S.decks = await resp.json();
+  const modalSel = document.getElementById('modal-deck-select');
+  modalSel.innerHTML = '<option value="">All decks</option>'
+    + S.decks.map(function(d) {
+        return '<option value="' + escHtml(d.deck_id) + '">' + escHtml(d.deck_id) + ' (' + d.total_pages + ' slides)</option>';
+      }).join('');
+}
+
+async function loadModels() {
+  const sel = document.getElementById('model-select');
+  sel.innerHTML = '<option value="">Loading...</option>';
+  const resp = await fetch('/api/models');
+  const data = await resp.json();
+  if (data.error) {
+    sel.innerHTML = '<option value="">Error loading models</option>';
+    return;
+  }
+  S.models = data.models;
+  const defaultModel = 'nvidia/llama-3.1-nemotron-ultra-253b-v1:free';
+  sel.innerHTML = data.models.map(function(m) {
+    const price = m.pricing && parseFloat(m.pricing.prompt || '1');
+    const tag = price === 0 ? ' [FREE]' : '';
+    return '<option value="' + escHtml(m.id) + '"' + (m.id === defaultModel ? ' selected' : '') + '>'
+      + escHtml(m.name) + tag + '</option>';
+  }).join('');
+}
+
+// ── Review tab selects ────────────────────────────────────────────────────────
+function populateRunSelects() {
+  const sel = document.getElementById('run-select');
+  const reflexSel = document.getElementById('reflexion-run-select');
+  const opts = S.runs.map(function(r) {
+    return '<option value="' + escHtml(r.run_id) + '">' + escHtml(r.run_id) + '</option>';
+  }).join('');
+  sel.innerHTML = '<option value="">— select run —</option>' + opts;
+  reflexSel.innerHTML = '<option value="">— select prior run —</option>' + opts;
+}
+
+async function onRunChange() {
+  const runId = document.getElementById('run-select').value;
+  if (!runId) return;
+  S.currentRunId = runId;
+
+  const resp = await fetch('/api/runs/' + runId + '/ratings');
+  S.ratings = await resp.json();
+
+  const run = S.runs.find(function(r) { return r.run_id === runId; });
+  const deckSel = document.getElementById('deck-select');
+  if (run && run.deck_ids.length) {
+    deckSel.innerHTML = '<option value="">— select deck —</option>'
+      + run.deck_ids.map(function(id) {
+          return '<option value="' + escHtml(id) + '">' + escHtml(id) + '</option>';
+        }).join('');
+    deckSel.value = run.deck_ids[0];
+    onDeckChange();
+  } else {
+    deckSel.innerHTML = '<option value="">— no decks —</option>';
+  }
+}
+
+async function onDeckChange() {
+  const deckId = document.getElementById('deck-select').value;
+  if (!deckId || !S.currentRunId) return;
+  S.currentDeckId = deckId;
+  await loadReview(S.currentRunId, deckId);
+}
+
+async function loadReview(runId, deckId) {
+  try {
+    const r = await fetch('/api/runs/' + runId + '/' + deckId + '/redlines');
+    S.redlines = r.ok ? await r.json() : {};
+  } catch(e) { S.redlines = {}; }
+
+  const deckRatings = S.ratings[deckId] || {};
+  document.getElementById('notes-area').value = deckRatings.notes || '';
+
+  renderRedlines();
+  refreshScore();
+  loadPdf(deckId);
+}
+
+// ── Redlines rendering ────────────────────────────────────────────────────────
+function renderRedlines() {
+  const list = document.getElementById('redlines-list');
+  const entries = Object.entries(S.redlines).sort(function(a, b) { return parseInt(a[0]) - parseInt(b[0]); });
+  const deckRatings = ((S.ratings[S.currentDeckId] || {}).slide_ratings) || {};
+
+  if (!entries.length) {
+    list.innerHTML = '<div style="padding:16px;color:#999;font-size:11px;">No redlines for this deck.</div>';
+    return;
+  }
+
+  list.innerHTML = entries.map(function(entry) {
+    const slide = entry[0];
+    const text = entry[1];
+    const rating = deckRatings[slide];
+    const tActive = rating === true ? ' active' : '';
+    const fActive = rating === false ? ' active' : '';
+    const unrated = rating == null ? ' unrated' : '';
+    const selected = S.selectedSlide === slide ? ' selected' : '';
+
+    var badge = 'general';
+    const lower = text.toLowerCase();
+    if (lower.indexOf('label title') !== -1 || lower.indexOf('action title') !== -1) badge = 'title';
+    else if (lower.indexOf('so-what') !== -1) badge = 'so-what';
+    else if (lower.indexOf('pyramid') !== -1) badge = 'pyramid';
+    else if (lower.indexOf('density') !== -1) badge = 'density';
+    else if (lower.indexOf('unsupported') !== -1 || lower.indexOf('quantify') !== -1) badge = 'unsupported';
+
+    return '<div class="redline-row' + unrated + selected + '" onclick="selectRedline(\'' + slide + '\')">'
+      + '<span class="slide-num">Sl ' + slide + '</span>'
+      + '<div class="rating-btns">'
+      + '<span class="btn-t' + tActive + '" onclick="event.stopPropagation();rate(\'' + slide + '\',true)">T</span>'
+      + '<span class="btn-f' + fActive + '" onclick="event.stopPropagation();rate(\'' + slide + '\',false)">F</span>'
+      + '</div>'
+      + '<span class="redline-text">' + escHtml(text) + '</span>'
+      + '<span class="redline-badge">' + badge + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function selectRedline(slide) {
+  S.selectedSlide = slide;
+  renderRedlines();
+  jumpToPage(parseInt(slide));
+}
+
+// ── Rating ────────────────────────────────────────────────────────────────────
+async function rate(slide, value) {
+  if (!S.currentRunId || !S.currentDeckId) return;
+  const deckRatings = ((S.ratings[S.currentDeckId] || {}).slide_ratings) || {};
+  const current = deckRatings[slide];
+  const newValue = current === value ? null : value;
+
+  const resp = await fetch('/api/runs/' + S.currentRunId + '/ratings', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({deck_id: S.currentDeckId, slide: slide, value: newValue}),
+  });
+  const score = await resp.json();
+
+  if (!S.ratings[S.currentDeckId]) S.ratings[S.currentDeckId] = {slide_ratings: {}, notes: ''};
+  if (!S.ratings[S.currentDeckId].slide_ratings) S.ratings[S.currentDeckId].slide_ratings = {};
+  S.ratings[S.currentDeckId].slide_ratings[slide] = newValue;
+
+  renderRedlines();
+  updateScoreDisplay(score);
+}
+
+// ── Notes ─────────────────────────────────────────────────────────────────────
+async function saveNotes() {
+  if (!S.currentRunId || !S.currentDeckId) return;
+  const notes = document.getElementById('notes-area').value;
+  await fetch('/api/runs/' + S.currentRunId + '/notes', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({deck_id: S.currentDeckId, notes: notes}),
+  });
+  if (!S.ratings[S.currentDeckId]) S.ratings[S.currentDeckId] = {slide_ratings: {}, notes: ''};
+  S.ratings[S.currentDeckId].notes = notes;
+}
+
+// ── Score display ─────────────────────────────────────────────────────────────
+async function refreshScore() {
+  if (!S.currentRunId) return;
+  try {
+    const resp = await fetch('/api/runs/' + S.currentRunId + '/score');
+    if (!resp.ok) { updateScoreDisplay(null); return; }
+    const data = await resp.json();
+    updateScoreDisplay(data.overall);
+  } catch(e) { updateScoreDisplay(null); }
+}
+
+function updateScoreDisplay(score) {
+  const big = document.getElementById('score-big');
+  const sub = document.getElementById('score-sub');
+  const stat = document.getElementById('topbar-stat');
+  if (!score || score.rated === 0) {
+    big.textContent = '—';
+    sub.textContent = 'no ratings yet';
+    stat.textContent = '— / — rated';
+    return;
+  }
+  const pct = score.correct_pct != null ? score.correct_pct + '%' : '—';
+  big.textContent = pct;
+  sub.textContent = score.correct + ' / ' + score.rated + ' correct';
+  stat.textContent = score.rated + ' / ' + score.total + ' rated · ' + pct;
+}
+
+// ── PDF viewer ────────────────────────────────────────────────────────────────
+async function loadPdf(deckId) {
+  const url = '/data/raw/' + deckId + '.pdf';
+  try {
+    S.pdfDoc = await pdfjsLib.getDocument(url).promise;
+    S.totalPages = S.pdfDoc.numPages;
+    S.currentPage = 1;
+    renderPage(1);
+  } catch(e) {
+    document.getElementById('pdf-container').innerHTML =
+      '<div style="color:#ccc;font-size:12px;text-align:center;padding:20px;">PDF not available.<br><small>Run data/download.py to fetch PDFs.</small></div>';
+    document.getElementById('pdf-page-info').textContent = '—';
+  }
+}
+
+async function renderPage(num) {
+  if (!S.pdfDoc) return;
+  S.currentPage = Math.max(1, Math.min(num, S.totalPages));
+  const page = await S.pdfDoc.getPage(S.currentPage);
+  const container = document.getElementById('pdf-container');
+  const scale = Math.min(container.clientWidth / page.getViewport({scale: 1}).width, 1.5);
+  const viewport = page.getViewport({scale: scale});
+  const canvas = document.getElementById('pdf-canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
+  document.getElementById('pdf-page-info').textContent = 'Page ' + S.currentPage + ' / ' + S.totalPages;
+}
+
+function prevPage() { renderPage(S.currentPage - 1); }
+function nextPage() { renderPage(S.currentPage + 1); }
+function jumpToPage(num) { renderPage(num); }
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('modal-overlay').classList.add('open');
+  document.getElementById('eval-log').style.display = 'none';
+  document.getElementById('eval-log').textContent = '';
+  document.getElementById('run-btn').disabled = false;
+  document.getElementById('run-btn').textContent = '▶ Run';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function toggleReflexion() {
+  const on = document.getElementById('reflexion-toggle').checked;
+  document.getElementById('reflexion-row').classList.toggle('visible', on);
+}
+
+async function startEval() {
+  const model = document.getElementById('model-select').value;
+  if (!model) { alert('Select a model first.'); return; }
+
+  const deckId = document.getElementById('modal-deck-select').value || null;
+  const useReflexion = document.getElementById('reflexion-toggle').checked;
+  const reflexionRunId = useReflexion
+    ? (document.getElementById('reflexion-run-select').value || null)
+    : null;
+
+  const logEl = document.getElementById('eval-log');
+  logEl.style.display = 'block';
+  logEl.textContent = '▶ Starting eval...\n';
+
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running...';
+
+  try {
+    const resp = await fetch('/api/eval/start', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({model: model, deck_id: deckId, reflexion_run_id: reflexionRunId}),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      logEl.textContent += '\nError: ' + (err.detail || JSON.stringify(err)) + '\n';
+      btn.disabled = false;
+      btn.textContent = '▶ Run';
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    var buf = '';
+
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      buf += decoder.decode(chunk.value, {stream: true});
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (var i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.indexOf('data: ') !== 0) continue;
+        const msg = line.slice(6);
+        if (msg === '__DONE__') {
+          logEl.textContent += '\n✓ Done.\n';
+          logEl.scrollTop = logEl.scrollHeight;
+          btn.disabled = false;
+          btn.textContent = '▶ Run again';
+          await loadRuns();
+          return;
+        }
+        logEl.textContent += msg + '\n';
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+    }
+  } catch(e) {
+    logEl.textContent += '\nNetwork error: ' + e.message + '\n';
+    btn.disabled = false;
+    btn.textContent = '▶ Run';
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+Promise.all([loadRuns(), loadDecks(), loadModels()]);
+</script>
+</body>
+</html>
