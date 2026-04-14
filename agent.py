@@ -1,16 +1,16 @@
-"""ReAct loop for the PPT review agent.
+"""ReAct loop for the PPT review agent — OpenRouter backend.
 
-run(deck, output_dir, system_prompt, api_key, reflexion_context=None) → (review_dict, token_stats)
+run(deck, output_dir, system_prompt, api_key, model, reflexion_context=None) → (review_dict, token_stats)
 
 review_dict = {"redlines": {page_num: feedback}, "narrative": str}
 token_stats  = {"input": int, "output": int, "thinking": int}
 """
+import json
 import tomllib
 from pathlib import Path
 
+import requests
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
 
 from tools import Tools
 
@@ -19,75 +19,75 @@ load_dotenv()
 with open(Path(__file__).parent / "config.toml", "rb") as _f:
     _config = tomllib.load(_f)
 
-MODEL = _config["model"]["name"]
 MAX_ITERATIONS = _config["model"]["max_iterations"]
-_THINKING_LEVEL = _config["model"]["thinking_level"]
+DEFAULT_MODEL = _config["model"].get("default_model", "nvidia/llama-3.1-nemotron-ultra-253b-v1:free")
 
-READ_DECK_METADATA_DECL = types.FunctionDeclaration(
-    name="read_deck_metadata",
-    description="Get metadata: entity name, deck title, total slide count, source type.",
-    parameters={"type": "object", "properties": {}, "required": []},
-)
+OPENROUTER_BASE = "https://openrouter.ai/api/v1/chat/completions"
+_SITE_URL = "http://localhost:8000"
+_SITE_TITLE = "PPT Review Agent"
 
-READ_SLIDE_DECL = types.FunctionDeclaration(
-    name="read_slide",
-    description="Read the title and body text of one slide by page number (1-based).",
-    parameters={
-        "type": "object",
-        "properties": {
-            "page_num": {"type": "integer", "description": "Slide number, starting from 1"},
+TOOLS = [
+    {"type": "function", "function": {
+        "name": "read_deck_metadata",
+        "description": "Get metadata: entity name, deck title, total slide count, source type.",
+        "parameters": {"type": "object", "properties": {}, "required": []},
+    }},
+    {"type": "function", "function": {
+        "name": "read_slide",
+        "description": "Read the title and body text of one slide by page number (1-based).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "page_num": {"type": "integer", "description": "Slide number, starting from 1"},
+            },
+            "required": ["page_num"],
         },
-        "required": ["page_num"],
-    },
-)
-
-WRITE_REDLINE_DECL = types.FunctionDeclaration(
-    name="write_redline",
-    description="Save a redline comment for a specific slide.",
-    parameters={
-        "type": "object",
-        "properties": {
-            "page_num": {"type": "integer", "description": "Slide number"},
-            "feedback": {"type": "string", "description": "Redline comment for this slide"},
+    }},
+    {"type": "function", "function": {
+        "name": "write_redline",
+        "description": "Save a redline comment for a specific slide.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "page_num": {"type": "integer", "description": "Slide number"},
+                "feedback": {"type": "string", "description": "Redline comment for this slide"},
+            },
+            "required": ["page_num", "feedback"],
         },
-        "required": ["page_num", "feedback"],
-    },
-)
-
-WRITE_NARRATIVE_DECL = types.FunctionDeclaration(
-    name="write_narrative",
-    description="Save the deck-level narrative note (3–5 sentences on overall story quality).",
-    parameters={
-        "type": "object",
-        "properties": {
-            "text": {"type": "string", "description": "Deck-level narrative feedback"},
+    }},
+    {"type": "function", "function": {
+        "name": "write_narrative",
+        "description": "Save the deck-level narrative note (3-5 sentences on overall story quality).",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "string", "description": "Deck-level narrative feedback"},
+            },
+            "required": ["text"],
         },
-        "required": ["text"],
-    },
-)
-
-FINISH_DECL = types.FunctionDeclaration(
-    name="finish",
-    description="Signal that the review is complete. Call after writing all redlines and the narrative.",
-    parameters={"type": "object", "properties": {}, "required": []},
-)
-
-GEMINI_TOOLS = types.Tool(function_declarations=[
-    READ_DECK_METADATA_DECL,
-    READ_SLIDE_DECL,
-    WRITE_REDLINE_DECL,
-    WRITE_NARRATIVE_DECL,
-    FINISH_DECL,
-])
+    }},
+    {"type": "function", "function": {
+        "name": "finish",
+        "description": "Signal that the review is complete. Call after writing all redlines and the narrative.",
+        "parameters": {"type": "object", "properties": {}, "required": []},
+    }},
+]
 
 
-def _accumulate_tokens(usage, tokens: dict) -> None:
-    """Add token counts from a response's usage_metadata into running totals."""
-    if usage is None:
-        return
-    tokens["input"] += getattr(usage, "prompt_token_count", 0) or 0
-    tokens["output"] += getattr(usage, "candidates_token_count", 0) or 0
-    tokens["thinking"] += getattr(usage, "thoughts_token_count", 0) or 0
+def _dispatch(tools: Tools, name: str, args: dict) -> str:
+    """Route a tool call name+args to the Tools instance. Returns result string."""
+    if name == "read_deck_metadata":
+        return tools.read_deck_metadata()
+    elif name == "read_slide":
+        return tools.read_slide(int(args["page_num"]))
+    elif name == "write_redline":
+        return tools.write_redline(int(args["page_num"]), args["feedback"])
+    elif name == "write_narrative":
+        return tools.write_narrative(args["text"])
+    elif name == "finish":
+        return tools.finish()
+    else:
+        return f"Unknown tool: {name}"
 
 
 def run(
@@ -95,6 +95,7 @@ def run(
     output_dir: Path,
     system_prompt: str,
     api_key: str,
+    model: str = DEFAULT_MODEL,
     reflexion_context: str | None = None,
 ) -> tuple[dict, dict]:
     """Run the ReAct review loop for one deck. Returns (review, token_stats).
@@ -103,83 +104,74 @@ def run(
         deck: parsed deck dict from data/decks/*.json
         output_dir: directory to write redlines.json and narrative.txt
         system_prompt: rubric text from system_prompt.md
-        api_key: Gemini API key
-        reflexion_context: optional prior-run feedback to inject (for --reflexion mode)
+        api_key: OpenRouter API key
+        model: OpenRouter model ID (e.g. 'nvidia/llama-3.1-nemotron-ultra-253b-v1:free')
+        reflexion_context: optional prior-run feedback (for --reflexion mode)
     """
-    client = genai.Client(api_key=api_key)
-    tools = Tools(deck, output_dir)
+    tools_obj = Tools(deck, output_dir)
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "HTTP-Referer": _SITE_URL,
+        "X-OpenRouter-Title": _SITE_TITLE,
+        "Content-Type": "application/json",
+    }
 
-    thinking_config = None
-    if _THINKING_LEVEL and _THINKING_LEVEL != "none":
-        thinking_config = types.ThinkingConfig(thinking_level=_THINKING_LEVEL)
-
-    config = types.GenerateContentConfig(
-        system_instruction=system_prompt,
-        tools=[GEMINI_TOOLS],
-        thinking_config=thinking_config,
+    initial_content = (
+        f"Please review this presentation: {deck['deck_id']} ({deck.get('entity', '')})"
     )
-
-    initial_parts = [types.Part.from_text(
-        text=f"Please review this presentation: {deck['deck_id']} ({deck.get('entity', '')})"
-    )]
     if reflexion_context:
-        initial_parts.append(types.Part.from_text(text=reflexion_context))
+        initial_content += f"\n\n{reflexion_context}"
 
-    contents = [types.Content(role="user", parts=initial_parts)]
+    messages: list[dict] = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": initial_content},
+    ]
     tokens = {"input": 0, "output": 0, "thinking": 0}
 
     for _ in range(MAX_ITERATIONS):
-        response = client.models.generate_content(
-            model=MODEL,
-            contents=contents,
-            config=config,
+        resp = requests.post(
+            OPENROUTER_BASE,
+            headers=headers,
+            data=json.dumps({
+                "model": model,
+                "messages": messages,
+                "tools": TOOLS,
+                "tool_choice": "auto",
+            }),
+            timeout=120,
         )
-        _accumulate_tokens(response.usage_metadata, tokens)
+        resp.raise_for_status()
+        data = resp.json()
 
-        if not response.candidates:
-            break
+        usage = data.get("usage", {})
+        tokens["input"] += usage.get("prompt_tokens", 0) or 0
+        tokens["output"] += usage.get("completion_tokens", 0) or 0
+        tokens["thinking"] += usage.get("native_tokens_reasoning", 0) or 0
 
-        candidate = response.candidates[0]
-        parts = candidate.content.parts or []
-        fn_calls = [p for p in parts if p.function_call]
+        message = data["choices"][0]["message"]
 
-        if fn_calls:
-            contents.append(candidate.content)
-            fn_responses = []
-            for part in fn_calls:
-                fc = part.function_call
-                args = dict(fc.args)
-                if fc.name == "read_deck_metadata":
-                    result = tools.read_deck_metadata()
-                elif fc.name == "read_slide":
-                    result = tools.read_slide(int(args["page_num"]))
-                elif fc.name == "write_redline":
-                    result = tools.write_redline(int(args["page_num"]), args["feedback"])
-                elif fc.name == "write_narrative":
-                    result = tools.write_narrative(args["text"])
-                elif fc.name == "finish":
-                    result = tools.finish()
-                else:
-                    result = f"Unknown tool: {fc.name}"
-
-                fn_responses.append(types.Part.from_function_response(
-                    name=fc.name,
-                    response={"result": result},
-                ))
-            contents.append(types.Content(role="user", parts=fn_responses))
-
-            if tools.is_finished:
+        if message.get("tool_calls"):
+            messages.append(message)
+            for tc in message["tool_calls"]:
+                name = tc["function"]["name"]
+                args = json.loads(tc["function"]["arguments"])
+                result = _dispatch(tools_obj, name, args)
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc["id"],
+                    "content": str(result),
+                })
+            if tools_obj.is_finished:
                 break
-
         else:
             # Model produced text instead of a tool call — nudge it back
-            contents.append(candidate.content)
-            contents.append(types.Content(role="user", parts=[types.Part.from_text(
-                text="Continue the review. Use the available tools to read slides and write feedback."
-            )]))
+            messages.append(message)
+            messages.append({"role": "user", "content": (
+                "Continue the review. Use the available tools to read slides and write feedback."
+            )})
 
-    if not tools.is_finished:
+    if not tools_obj.is_finished:
         print(f"  Warning: agent hit MAX_ITERATIONS ({MAX_ITERATIONS}) without calling finish()")
 
-    review = {"redlines": tools.redlines, "narrative": tools.narrative}
+    review = {"redlines": tools_obj.redlines, "narrative": tools_obj.narrative}
     return review, tokens
