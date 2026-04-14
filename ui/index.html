@@ -413,33 +413,38 @@ function renderRedlines() {
     return;
   }
 
-  list.innerHTML = entries.map(function(entry) {
+  var rows = [];
+  entries.forEach(function(entry) {
     const slide = entry[0];
-    const text = entry[1];
-    const rating = deckRatings[slide];
-    const tActive = rating === true ? ' active' : '';
-    const fActive = rating === false ? ' active' : '';
-    const unrated = rating == null ? ' unrated' : '';
-    const selected = S.selectedSlide === slide ? ' selected' : '';
+    const issues = Array.isArray(entry[1]) ? entry[1] : [entry[1]];
+    issues.forEach(function(text, i) {
+      const key = slide + '_' + i;
+      const rating = deckRatings[key];
+      const tActive = rating === true ? ' active' : '';
+      const fActive = rating === false ? ' active' : '';
+      const unrated = rating == null ? ' unrated' : '';
+      const selected = S.selectedSlide === key ? ' selected' : '';
 
-    var badge = 'general';
-    const lower = text.toLowerCase();
-    if (lower.indexOf('label title') !== -1 || lower.indexOf('action title') !== -1) badge = 'title';
-    else if (lower.indexOf('so-what') !== -1) badge = 'so-what';
-    else if (lower.indexOf('pyramid') !== -1) badge = 'pyramid';
-    else if (lower.indexOf('density') !== -1) badge = 'density';
-    else if (lower.indexOf('unsupported') !== -1 || lower.indexOf('quantify') !== -1) badge = 'unsupported';
+      var badge = 'general';
+      const lower = text.toLowerCase();
+      if (lower.indexOf('label title') !== -1 || lower.indexOf('action title') !== -1) badge = 'title';
+      else if (lower.indexOf('so-what') !== -1) badge = 'so-what';
+      else if (lower.indexOf('pyramid') !== -1) badge = 'pyramid';
+      else if (lower.indexOf('density') !== -1) badge = 'density';
+      else if (lower.indexOf('unsupported') !== -1 || lower.indexOf('quantify') !== -1) badge = 'unsupported';
 
-    return '<div class="redline-row' + unrated + selected + '" onclick="selectRedline(\'' + slide + '\')">'
-      + '<span class="slide-num">Sl ' + slide + '</span>'
-      + '<div class="rating-btns">'
-      + '<span class="btn-t' + tActive + '" onclick="event.stopPropagation();rate(\'' + slide + '\',true)">T</span>'
-      + '<span class="btn-f' + fActive + '" onclick="event.stopPropagation();rate(\'' + slide + '\',false)">F</span>'
-      + '</div>'
-      + '<span class="redline-text">' + escHtml(text) + '</span>'
-      + '<span class="redline-badge">' + badge + '</span>'
-      + '</div>';
-  }).join('');
+      rows.push('<div class="redline-row' + unrated + selected + '" onclick="selectRedline(\'' + escHtml(key) + '\')">'
+        + '<span class="slide-num">Sl ' + slide + '</span>'
+        + '<div class="rating-btns">'
+        + '<span class="btn-t' + tActive + '" onclick="event.stopPropagation();rate(\'' + escHtml(key) + '\',true)">T</span>'
+        + '<span class="btn-f' + fActive + '" onclick="event.stopPropagation();rate(\'' + escHtml(key) + '\',false)">F</span>'
+        + '</div>'
+        + '<span class="redline-text">' + escHtml(text) + '</span>'
+        + '<span class="redline-badge">' + badge + '</span>'
+        + '</div>');
+    });
+  });
+  list.innerHTML = rows.join('');
 }
 
 function escHtml(s) {
@@ -451,10 +456,10 @@ function escHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
-function selectRedline(slide) {
-  S.selectedSlide = slide;
+function selectRedline(key) {
+  S.selectedSlide = key;
   renderRedlines();
-  jumpToPage(parseInt(slide));
+  jumpToPage(parseInt(key.split('_')[0]));
 }
 
 // ── Rating ────────────────────────────────────────────────────────────────────

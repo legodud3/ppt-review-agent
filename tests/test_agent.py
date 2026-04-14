@@ -89,7 +89,7 @@ def test_run_calls_finish_and_returns_review(sample_deck, output_dir):
 
     assert review["narrative"] == "Overall fine."
     assert 1 in review["redlines"]
-    assert review["redlines"][1] == "Good"
+    assert review["redlines"][1] == ["Good"]
     assert tokens["input"] > 0
     assert tokens["output"] > 0
 

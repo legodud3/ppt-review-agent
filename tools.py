@@ -11,7 +11,7 @@ class Tools:
     def __init__(self, deck: dict, output_dir: Path) -> None:
         self.deck = deck
         self.output_dir = output_dir
-        self.redlines: dict[int, str] = {}
+        self.redlines: dict[int, list[str]] = {}
         self.narrative: str = ""
         self._finished: bool = False
 
@@ -34,15 +34,14 @@ class Tools:
         return {"page": slide["page"], "title": slide["title"], "body": slide["body"]}
 
     def write_redline(self, page_num: int, feedback: str) -> str:
-        """Save a redline comment for a slide. Returns error string for out-of-range pages."""
+        """Append one redline comment for a slide. Call once per distinct issue."""
         slides = self.deck["slides"]
         if page_num < 1 or page_num > len(slides):
             return f"Error: Page {page_num} out of range (1–{len(slides)}). Redline not saved."
-        if page_num in self.redlines:
-            self.redlines[page_num] = feedback
-            return f"Redline for slide {page_num} updated (previous comment replaced)."
-        self.redlines[page_num] = feedback
-        return f"Redline saved for slide {page_num}."
+        if page_num not in self.redlines:
+            self.redlines[page_num] = []
+        self.redlines[page_num].append(feedback)
+        return f"Redline {len(self.redlines[page_num])} saved for slide {page_num}."
 
     def write_narrative(self, text: str) -> str:
         """Save the deck-level narrative note."""

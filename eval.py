@@ -35,7 +35,13 @@ def build_ratings_template(deck_ids: list[str], run_dir: Path) -> None:
         redlines_path = run_dir / deck_id / "redlines.json"
         if redlines_path.exists():
             redlines = json.loads(redlines_path.read_text(encoding="utf-8"))
-            slide_ratings = {page: None for page in redlines}
+            slide_ratings = {}
+            for page, issues in redlines.items():
+                if isinstance(issues, list):
+                    for i in range(len(issues)):
+                        slide_ratings[f"{page}_{i}"] = None
+                else:
+                    slide_ratings[page] = None
         else:
             slide_ratings = {}
         entry: dict = {"slide_ratings": slide_ratings, "notes": ""}
@@ -68,16 +74,19 @@ def build_reflexion_context(deck_id: str, prior_run_dir: Path) -> str | None:
         "Human ratings are shown — use them to improve your review:\n"
     ]
     has_incorrect = False
-    for page_str, feedback in sorted(redlines.items(), key=lambda x: int(x[0])):
-        verdict = deck_ratings.get(page_str)
-        if verdict is True:
-            label = "CORRECT"
-        elif verdict is False:
-            label = "INCORRECT"
-            has_incorrect = True
-        else:
-            label = "UNRATED"
-        lines.append(f"  Slide {page_str}: \"{feedback}\" → Human rating: {label}")
+    for page_str, issues in sorted(redlines.items(), key=lambda x: int(x[0])):
+        issue_list = issues if isinstance(issues, list) else [issues]
+        for i, feedback in enumerate(issue_list):
+            key = f"{page_str}_{i}" if isinstance(issues, list) else page_str
+            verdict = deck_ratings.get(key)
+            if verdict is True:
+                label = "CORRECT"
+            elif verdict is False:
+                label = "INCORRECT"
+                has_incorrect = True
+            else:
+                label = "UNRATED"
+            lines.append(f"  Slide {page_str}: \"{feedback}\" → Human rating: {label}")
 
     notes = ratings.get(deck_id, {}).get("notes", "")
     if notes:

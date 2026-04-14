@@ -44,9 +44,18 @@ def test_read_slide_out_of_range(tools):
 
 
 def test_write_redline(tools):
-    msg = tools.write_redline(1, "Label title — rewrite to state conclusion")
+    msg = tools.write_redline(1, "Pyramid broken — bullets don't support title claim")
     assert "1" in msg
-    assert tools.redlines[1] == "Label title — rewrite to state conclusion"
+    assert tools.redlines[1] == ["Pyramid broken — bullets don't support title claim"]
+
+
+def test_write_redline_multiple_per_slide(tools):
+    """Multiple write_redline calls on the same slide append to a list."""
+    tools.write_redline(1, "Unsupported assertion — quantify the claim")
+    tools.write_redline(1, "So-what missing — add conclusion sentence")
+    assert len(tools.redlines[1]) == 2
+    assert tools.redlines[1][0] == "Unsupported assertion — quantify the claim"
+    assert tools.redlines[1][1] == "So-what missing — add conclusion sentence"
 
 
 def test_write_redline_out_of_range(tools):
@@ -66,7 +75,7 @@ def test_write_narrative(tools):
 
 
 def test_finish_idempotent(tools):
-    tools.write_redline(1, "Label title")
+    tools.write_redline(1, "Pyramid broken")
     tools.write_narrative("Poor arc.")
     tools.finish()
     msg = tools.finish()
@@ -74,7 +83,8 @@ def test_finish_idempotent(tools):
 
 
 def test_finish_writes_files(tools, tmp_path):
-    tools.write_redline(1, "Label title")
+    tools.write_redline(1, "Pyramid broken")
+    tools.write_redline(1, "So-what missing")
     tools.write_redline(2, "Unsupported assertion")
     tools.write_narrative("Poor narrative arc.")
     tools.finish()
@@ -88,7 +98,7 @@ def test_finish_writes_files(tools, tmp_path):
     assert narrative_path.exists()
 
     redlines = json.loads(redlines_path.read_text())
-    assert redlines["1"] == "Label title"
-    assert redlines["2"] == "Unsupported assertion"
+    assert redlines["1"] == ["Pyramid broken", "So-what missing"]
+    assert redlines["2"] == ["Unsupported assertion"]
 
     assert narrative_path.read_text() == "Poor narrative arc."
