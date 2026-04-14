@@ -7,6 +7,7 @@ import asyncio
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 from typing import AsyncIterator
 
@@ -39,7 +40,9 @@ def serve_index():
 
 @app.get("/data/raw/{deck_id}.pdf")
 def serve_pdf(deck_id: str):
-    path = DATA_RAW / f"{deck_id}.pdf"
+    path = (DATA_RAW / f"{deck_id}.pdf").resolve()
+    if not path.is_relative_to(DATA_RAW.resolve()):
+        raise HTTPException(400, "Invalid deck_id")
     if not path.exists():
         raise HTTPException(404, f"PDF not found: {deck_id}.pdf — run data/download.py first")
     return FileResponse(path, media_type="application/pdf")
@@ -51,7 +54,10 @@ def serve_pdf(deck_id: str):
 def list_decks():
     decks = []
     for f in sorted(DATA_DECKS.glob("*.json")):
-        data = json.loads(f.read_text(encoding="utf-8"))
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            raise HTTPException(500, f"Failed to read file: {exc}") from exc
         decks.append({
             "deck_id": data["deck_id"],
             "entity": data.get("entity", ""),
@@ -103,7 +109,10 @@ def _compute_score(run_dir: Path) -> dict:
     path = run_dir / "ratings.json"
     if not path.exists():
         return {"correct": 0, "rated": 0, "total": 0}
-    ratings = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        ratings = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {"correct": 0, "rated": 0, "total": 0}
     correct = rated = total = 0
     for deck_data in ratings.values():
         for v in deck_data.get("slide_ratings", {}).values():
@@ -138,7 +147,11 @@ def get_ratings(run_id: str):
     path = RUNS_DIR / run_id / "ratings.json"
     if not path.exists():
         return {}
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(500, f"Failed to read file: {exc}") from exc
+    return data
 
 
 @app.get("/api/runs/{run_id}/{deck_id}/redlines")
@@ -146,7 +159,11 @@ def get_redlines(run_id: str, deck_id: str):
     path = RUNS_DIR / run_id / deck_id / "redlines.json"
     if not path.exists():
         raise HTTPException(404, "redlines.json not found")
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(500, f"Failed to read file: {exc}") from exc
+    return data
 
 
 @app.get("/api/runs/{run_id}/{deck_id}/narrative")
@@ -175,10 +192,15 @@ def save_rating(run_id: str, body: RatingUpdate):
     path = RUNS_DIR / run_id / "ratings.json"
     if not path.exists():
         raise HTTPException(404, "ratings.json not found — run eval first")
-    ratings = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        ratings = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(500, f"Failed to read ratings.json: {exc}") from exc
     deck_data = ratings.setdefault(body.deck_id, {"slide_ratings": {}, "notes": ""})
     deck_data["slide_ratings"][body.slide] = body.value
-    path.write_text(json.dumps(ratings, indent=2), encoding="utf-8")
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(ratings, indent=2), encoding="utf-8")
+    tmp.replace(path)
     return _compute_score(RUNS_DIR / run_id)
 
 
@@ -187,10 +209,15 @@ def save_notes(run_id: str, body: NotesUpdate):
     path = RUNS_DIR / run_id / "ratings.json"
     if not path.exists():
         raise HTTPException(404, "ratings.json not found — run eval first")
-    ratings = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        ratings = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(500, f"Failed to read ratings.json: {exc}") from exc
     deck_data = ratings.setdefault(body.deck_id, {"slide_ratings": {}, "notes": ""})
     deck_data["notes"] = body.notes
-    path.write_text(json.dumps(ratings, indent=2), encoding="utf-8")
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(ratings, indent=2), encoding="utf-8")
+    tmp.replace(path)
     return {"ok": True}
 
 
@@ -201,7 +228,10 @@ def get_score(run_id: str):
     path = RUNS_DIR / run_id / "ratings.json"
     if not path.exists():
         raise HTTPException(404, "ratings.json not found")
-    ratings = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        ratings = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(500, f"Failed to read file: {exc}") from exc
     per_deck = []
     t_correct = t_rated = t_total = 0
     for deck_id, deck_data in ratings.items():
